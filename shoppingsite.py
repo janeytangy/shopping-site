@@ -6,7 +6,7 @@ put melons in a shopping cart.
 Authors: Joel Burton, Christian Fernandez, Meggie Mahnken, Katie Byers.
 """
 
-from flask import Flask, render_template, redirect, flash
+from flask import Flask, session, render_template, redirect, flash
 import jinja2
 
 import melons
@@ -78,7 +78,25 @@ def show_shopping_cart():
     # Make sure your function can also handle the case wherein no cart has
     # been added to the session
 
-    return render_template("cart.html")
+    melon_cart_dict = session['cart']
+
+    melon_cart_list = []
+
+    total_order_cost = 0
+
+    for melon_id, quantity in melon_cart_dict.items():
+        melon = melons.get_by_id(melon_id)
+ 
+        total_cost = quantity * melon.price
+        total_order_cost += total_cost 
+
+        melon.quantity = quantity 
+        melon.total_cost = total_cost
+
+        melon_cart_list.append(melon)
+
+
+    return render_template("cart.html", total_cost = total_order_cost, all_melons_bought = melon_cart_list)
 
 
 @app.route("/add_to_cart/<melon_id>")
@@ -87,20 +105,24 @@ def add_to_cart(melon_id):
 
     When a melon is added to the cart, redirect browser to the shopping cart
     page and display a confirmation message: 'Melon successfully added to
-    cart'."""
+    cart'.""" 
 
-    # TODO: Finish shopping cart functionality
+    if 'cart' in session:
+        if melon_id in session['cart']:
+            session['cart'][melon_id] += 1
+            flash("You've successfully added another melon!")
+        else:
+            session['cart'][melon_id] = 1
+            flash("You've successfully added another melon!")
+    else: 
+        session['cart'] = {}
 
-    # The logic here should be something like:
-    #
-    # - check if a "cart" exists in the session, and create one (an empty
-    #   dictionary keyed to the string "cart") if not
-    # - check if the desired melon id is the cart, and if not, put it in
-    # - increment the count for that melon id by 1
-    # - flash a success message
-    # - redirect the user to the cart page
+    session.modified = True
 
-    return "Oops! This needs to be implemented!"
+    # print('*' * 30)
+    # print(session['cart'])
+
+    return redirect("/cart")
 
 
 @app.route("/login", methods=["GET"])
